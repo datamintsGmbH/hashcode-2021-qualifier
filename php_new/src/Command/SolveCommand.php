@@ -10,7 +10,7 @@ namespace Datamints\HashCode\Qualifier2021\Command;
 class SolveCommand extends \Symfony\Component\Console\Command\Command
 {
 
-    const LINES_PER_PROBLEM = 2; // @todo Adjust to problem statement
+    const LINES_PER_PROBLEM = 1; // @todo Adjust to problem statement
 
     /**
      * @inheritDoc
@@ -21,7 +21,7 @@ class SolveCommand extends \Symfony\Component\Console\Command\Command
              ->setDescription('Solve the problem')
              ->addArgument('strategy', \Symfony\Component\Console\Input\InputArgument::REQUIRED, 'Strategy for solving (class name without namespace)')
              ->addArgument('input-file', \Symfony\Component\Console\Input\InputArgument::REQUIRED, 'Input file')
-             ->addArgument('output', \Symfony\Component\Console\Input\InputArgument::OPTIONAL, 'Output file');
+             ->addArgument('output-file', \Symfony\Component\Console\Input\InputArgument::OPTIONAL, 'Output file');
     }
 
     /**
@@ -39,10 +39,18 @@ class SolveCommand extends \Symfony\Component\Console\Command\Command
         if (!is_file($inputFile)) {
             throw new \RuntimeException('Input file could not be found');
         }
-        $inputFileHandle = fopen($inputFile, 'r+');
-        if ($inputFileHandle === false) {
+
+        // Read input file.
+        $inputData = file_get_contents($inputFile);
+        if ($inputData === false) {
             throw new \RuntimeException('Input file could not be opened for reading');
         }
+
+        // Split into lines and lines into parts.
+        $inputLines = explode(PHP_EOL, $inputData);
+        $inputLines = array_map(function (string $line): array {
+            return explode(' ', trim($line));
+        }, $inputLines);
 
         // Check for output file.
         $outputFile = $input->getArgument('output-file');
@@ -54,8 +62,8 @@ class SolveCommand extends \Symfony\Component\Console\Command\Command
             throw new \RuntimeException('Output file could not be opened for writing');
         }
 
-        // Read in base data.
-        $baseData = $this->readBaseData($inputFileHandle);
+        // Extract base data.
+        $baseData = $this->extractBaseData($inputLines);
 
         // Check for strategy.
         $strategyClass = 'Datamints\\HashCode\\Qualifier2021\\Strategy\\' . $input->getArgument('strategy');
@@ -65,15 +73,11 @@ class SolveCommand extends \Symfony\Component\Console\Command\Command
         /** @var \Datamints\HashCode\Qualifier2021\Strategy\StrategyInterface $strategy */
         $strategy = new $strategyClass($baseData);
 
-        // Read input file and apply strategy.
-        $solutions = [];
-        while ($lines = $this->readLines($inputFileHandle)) {
-            $outputLines = $strategy->solve($lines);
-            $solutions[] = $outputLines;
-        }
+        // Group remaining lines into problems.
+        $problems = array_chunk($inputLines, self::LINES_PER_PROBLEM);
 
-        // Close input file handle.
-        fclose($inputFileHandle);
+        // Solve the problem.
+        $solutions = $strategy->solve($problems);
 
         // Write output.
         fwrite($outputFileHandle, count($solutions) . PHP_EOL);
@@ -93,42 +97,15 @@ class SolveCommand extends \Symfony\Component\Console\Command\Command
     }
 
     /**
-     * Read base data.
+     * Extract base data.
      *
-     * @param resource $inputFileHandle File handle to read from
+     * @param array $inputLines Whole set of input lines
      * @return array
      */
-    protected function readBaseData($inputFileHandle): array
+    protected function extractBaseData(array $inputLines): array
     {
         // @todo Read and parse base data
-        $line = fgets($inputFileHandle, 4096);
-
-        return explode(' ', $line);
-    }
-
-    /**
-     * Read problem lines.
-     *
-     * @param resource $inputFileHandle File handle to read from
-     * @return null|array
-     */
-    protected function readLines($inputFileHandle): ?array
-    {
-        if (feof($inputFileHandle)) {
-            return null;
-        }
-
-        $lines = [];
-        for ($i = 0; $i < self::LINES_PER_PROBLEM; $i++) {
-            if ($line = fgets($inputFileHandle, 4096)) {
-                $lines[] = explode(' ', $line);
-            }
-            else {
-                throw new \RuntimeException('Problem could not be read from input file');
-            }
-        }
-
-        return $lines;
+        return array_shift($inputLines);
     }
 
 }

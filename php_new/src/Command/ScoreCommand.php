@@ -37,19 +37,33 @@ class ScoreCommand extends \Symfony\Component\Console\Command\Command
         if (!is_file($inputFile)) {
             throw new \RuntimeException('Input file could not be found');
         }
-        $inputFileHandle = fopen($inputFile, 'r+');
-        if ($inputFileHandle === false) {
+
+        // Read input file.
+        $inputData = file_get_contents($inputFile);
+        if ($inputData === false) {
             throw new \RuntimeException('Input file could not be opened for reading');
         }
 
+        // Split into lines and lines into parts.
+        $inputLines = explode(PHP_EOL, $inputData);
+        $inputLines = array_map(function (string $line): array {
+            return explode(' ', trim($line));
+        }, $inputLines);
+
         // Read away solution count (first line).
-        $solutionCount = intval(fgets($inputFileHandle, 4096));
+        $solutionCount = intval(array_shift($inputLines));
+
+        // Group remaining lines into solutions.
+        $solutions = array_chunk($inputLines, self::LINES_PER_SOLUTION);
 
         // Read input file and calculate score.
-        $scores = [];
-        for ($i = 0; $i < $solutionCount; $i++) {
-            $lines = $this->readLines($inputFileHandle);
-            $scores[] = $this->calculateScore($lines);
+        $scores = array_map(function (array $solution): int {
+            return $this->calculateScore($solution);
+        }, $solutions);
+
+        // Check for validity.
+        if (count($scores) !== $solutionCount) {
+            throw new \RuntimeException(sprintf('File is invalid, %d solutions specified, but %d found', $solutionCount, count($scores)));
         }
 
         // Sum up score.
@@ -80,14 +94,22 @@ class ScoreCommand extends \Symfony\Component\Console\Command\Command
      * Read solution lines.
      *
      * @param resource $inputFileHandle File handle to read from
-     * @return array
+     * @return null|array
      */
-    protected function readLines($inputFileHandle): array
+    protected function readLines($inputFileHandle): ?array
     {
+        if (feof($inputFileHandle)) {
+            return null;
+        }
+
         $lines = [];
         for ($i = 0; $i < self::LINES_PER_SOLUTION; $i++) {
-            if ($line = fgets($inputFileHandle, 4096)) {
-                $lines[] = explode(' ', $line);
+            if (($line = fgets($inputFileHandle, 4096)) !== false) {
+                if (strlen(trim($line)) === 0) {
+                    return null;
+                }
+
+                $lines[] = explode(' ', trim($line));
             }
             else {
                 throw new \RuntimeException('Solution could not be read from input file');
@@ -100,10 +122,10 @@ class ScoreCommand extends \Symfony\Component\Console\Command\Command
     /**
      * Calculate score.
      *
-     * @param array $lines Lines from the solution
+     * @param array $solution Solution (array of lines)
      * @return int
      */
-    protected function calculateScore(array $lines): int
+    protected function calculateScore(array $solution): int
     {
         // @todo Add implementation
 
