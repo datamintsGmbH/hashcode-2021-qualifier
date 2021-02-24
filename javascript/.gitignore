@@ -1,0 +1,5 @@
+# Ignore solutions file.
+*.out
+
+# Ignore Node modules.
+node_modules/
