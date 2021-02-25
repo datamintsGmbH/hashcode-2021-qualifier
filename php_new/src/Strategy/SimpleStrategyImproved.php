@@ -5,9 +5,9 @@ declare(strict_types=1);
 namespace Datamints\HashCode\Qualifier2021\Strategy;
 
 /**
- * Example strategy
+ * Simple strategy: switch the traffic light with the highest number of waiting cars at start to green, then all others.
  */
-class ExampleStrategy implements StrategyInterface
+class SimpleStrategyImproved implements StrategyInterface
 {
 
     /**
@@ -59,24 +59,34 @@ class ExampleStrategy implements StrategyInterface
             return $crossing;
         }, $crossings);
 
-        // Collect traffic lights to switch.
-        $crossingsToSwitch = [];
+        // Build solution: switch traffic lights in order of waitlist.
+        $solutions = [];
         foreach ($crossings as $index => $crossing) {
-            $streetToEnable = array_shift(array_keys($crossing['waitlist']));
-            $crossingsToSwitch[] = [
-                'index' => $index,
-                'street' => $streetToEnable,
+            // Get time from basedata to calculate with it.
+            $time = $this->baseData['time'];
+
+            // Create plans from the waitlist.
+            $plan = [];
+            foreach ($crossing['waitlist'] as $street => $numberCars) {
+                // Switch traffic light until all cars are through OR time is up, but at least 1 second.
+                $timeRequired = $numberCars == 0 ? 1 : $numberCars;
+                $plan[] = [$street, $timeRequired > $time ? $time : $timeRequired];
+
+                // Reduce remaining time.
+                $time -= $timeRequired;
+
+                // Break if time is up.
+                if ($time <= 0) {
+                    break;
+                }
+            }
+
+            $solutions[] = [
+                [$index],
+                [count($plan)],
+                ...$plan,
             ];
         }
-
-        // Create output format.
-        $solutions = array_map(function ($crossing) {
-            return [
-                [$crossing['index']],
-                [1],
-                [$crossing['street'], 1],
-            ];
-        }, $crossingsToSwitch);
 
         return $solutions;
     }
