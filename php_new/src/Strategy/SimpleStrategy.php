@@ -5,9 +5,9 @@ declare(strict_types=1);
 namespace Datamints\HashCode\Qualifier2021\Strategy;
 
 /**
- * Example strategy
+ * Simple strategy: switch the traffic light with the highest number of waiting cars at start to green forever.
  */
-class ExampleStrategy implements StrategyInterface
+class SimpleStrategy implements StrategyInterface
 {
 
     /**
