@@ -121,8 +121,21 @@ class SolveCommand extends \Symfony\Component\Console\Command\Command
             ];
         }
 
+        // Build crossings.
+        $crossings = [];
+        for ($i = 0; $i < $numberCrossings; $i++) {
+            $crossings[$i] = [
+                'incomingStreets' => [],
+                'outgoingStreets' => [],
+            ];
+        }
+        foreach ($streets as $street) {
+            $crossings[$street['start']]['outgoingStreets'][] = $street['name'];
+            $crossings[$street['end']]['incomingStreets'][] = $street['name'];
+        }
+
         // Combine everything.
-        $baseData = compact('time', 'numberCrossings', 'numberStreets', 'numberCars', 'bonus', 'streets', 'cars');
+        $baseData = compact('time', 'numberCrossings', 'numberStreets', 'numberCars', 'bonus', 'streets', 'cars', 'crossings');
 
         return $baseData;
     }
