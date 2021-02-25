@@ -73,11 +73,8 @@ class SolveCommand extends \Symfony\Component\Console\Command\Command
         /** @var \Datamints\HashCode\Qualifier2021\Strategy\StrategyInterface $strategy */
         $strategy = new $strategyClass($baseData);
 
-        // Group remaining lines into problems.
-        $problems = array_chunk($inputLines, self::LINES_PER_PROBLEM);
-
         // Solve the problem.
-        $solutions = $strategy->solve($problems);
+        $solutions = $strategy->solve();
 
         // Write output.
         fwrite($outputFileHandle, count($solutions) . PHP_EOL);
@@ -104,8 +101,30 @@ class SolveCommand extends \Symfony\Component\Console\Command\Command
      */
     protected function extractBaseData(array $inputLines): array
     {
-        // @todo Read and parse base data
-        return array_shift($inputLines);
+        // Read base data.
+        list($time, $numberCrossings, $numberStreets, $numberCars, $bonus) = array_shift($inputLines);
+
+        // Read streets.
+        $streets = [];
+        for ($i = 0; $i < $numberStreets; $i++) {
+            list($start, $end, $name, $time) = array_shift($inputLines);
+            $streets[] = compact('start', 'end', 'name', 'time');
+        }
+
+        // Read cars.
+        $cars = [];
+        for ($i = 0; $i < $numberCars; $i++) {
+            $line = array_shift($inputLines);
+            $cars[] = [
+                'numberStreets' => array_shift($line),
+                'streets' => $line,
+            ];
+        }
+
+        // Combine everything.
+        $baseData = compact('time', 'numberCrossings', 'numberStreets', 'numberCars', 'bonus', 'streets', 'cars');
+
+        return $baseData;
     }
 
 }

@@ -11,17 +11,10 @@ interface StrategyInterface
 {
 
     /**
-     * Generate solution for a set of problems;
-     * this should return an array of arrays:
-     * [
-     *   Solution: [
-     *     Lines of the solution: [], []
-     *   ]
-     * ]
+     * Generate solution.
      *
-     * @param array $problems List of problems
      * @return array
      */
-    public function solve(array $problems): array;
+    public function solve(): array;
 
 }

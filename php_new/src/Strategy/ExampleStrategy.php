@@ -30,7 +30,7 @@ class ExampleStrategy implements StrategyInterface
     /**
      * @inheritDoc
      */
-    public function solve(array $problems): array {
+    public function solve(): array {
         // @todo Implement real solution
         return [
             [
