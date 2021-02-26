@@ -81,14 +81,24 @@ class AverageStrategy implements StrategyInterface
         // Build solution: switch traffic lights in order of waitlist.
         $solutions = [];
         foreach ($crossings as $index => $crossing) {
+            // Get total time and adjust time factor.
+            $timeTotal = intval($this->baseData['time']);
+            $timeFactor = self::TIME_FACTOR > $timeTotal ? $timeTotal : self::TIME_FACTOR;
+
             // Create plans from the waitlist.
             $plan = [];
             foreach ($crossing['waitlist'] as $street => $count) {
                 // Switch traffic light in relation to the number of cars coming by.
-                $time = ceil(($count / $crossing['length']) * self::TIME_FACTOR);
+                $time = round(($count / $crossing['length']) * $timeFactor);
                 $plan[] = [$street, $time];
             }
 
+            // Check if we have something to do at all.
+            if (count($plan) === 0) {
+                continue;
+            }
+
+            // Add solution.
             $solutions[] = [
                 [$index],
                 [count($plan)],
