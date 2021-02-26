@@ -10,7 +10,12 @@ namespace Datamints\HashCode\Qualifier2021\Command;
 class SolveCommand extends \Symfony\Component\Console\Command\Command
 {
 
+    use \Datamints\HashCode\Qualifier2021\Traits\BaseDataTrait;
+
     const LINES_PER_PROBLEM = 1; // @todo Adjust to problem statement
+
+    const FORMAT_TXT = 'text';
+    const FORMAT_SERIALIZED = 'serialized';
 
     /**
      * @inheritDoc
@@ -21,7 +26,8 @@ class SolveCommand extends \Symfony\Component\Console\Command\Command
              ->setDescription('Solve the problem')
              ->addArgument('strategy', \Symfony\Component\Console\Input\InputArgument::REQUIRED, 'Strategy for solving (class name without namespace)')
              ->addArgument('input-file', \Symfony\Component\Console\Input\InputArgument::REQUIRED, 'Input file')
-             ->addArgument('output-file', \Symfony\Component\Console\Input\InputArgument::OPTIONAL, 'Output file');
+             ->addArgument('output-file', \Symfony\Component\Console\Input\InputArgument::OPTIONAL, 'Output file')
+            ->addOption('format', null, \Symfony\Component\Console\Input\InputOption::VALUE_REQUIRED, 'Input format', self::FORMAT_TXT);
     }
 
     /**
@@ -46,11 +52,26 @@ class SolveCommand extends \Symfony\Component\Console\Command\Command
             throw new \RuntimeException('Input file could not be opened for reading');
         }
 
-        // Split into lines and lines into parts.
-        $inputLines = explode(PHP_EOL, $inputData);
-        $inputLines = array_map(function (string $line): array {
-            return explode(' ', trim($line));
-        }, $inputLines);
+        // Process depending on format.
+        switch ($input->getOption('format')) {
+            case self::FORMAT_SERIALIZED:
+                $baseData = unserialize($inputData);
+                if ($baseData === false) {
+                    throw new \RuntimeException('Input data is not serialized');
+                }
+                break;
+
+            case self::FORMAT_TXT:
+            default:
+                // Split into lines and lines into parts.
+                $inputLines = explode(PHP_EOL, $inputData);
+                $inputLines = array_map(function (string $line): array {
+                    return explode(' ', trim($line));
+                }, $inputLines);
+
+                // Extract base data.
+                $baseData = $this->extractBaseData($inputLines);
+        }
 
         // Check for output file.
         $outputFile = $input->getArgument('output-file');
@@ -61,9 +82,6 @@ class SolveCommand extends \Symfony\Component\Console\Command\Command
         if ($outputFileHandle === false) {
             throw new \RuntimeException('Output file could not be opened for writing');
         }
-
-        // Extract base data.
-        $baseData = $this->extractBaseData($inputLines);
 
         // Check for strategy.
         $strategyClass = 'Datamints\\HashCode\\Qualifier2021\\Strategy\\' . $input->getArgument('strategy');
@@ -91,53 +109,6 @@ class SolveCommand extends \Symfony\Component\Console\Command\Command
         $output->writeln(sprintf('Runtime: %0.6f s', microtime(true) - $start));
 
         return 0;
-    }
-
-    /**
-     * Extract base data.
-     *
-     * @param array $inputLines Whole set of input lines
-     * @return array
-     */
-    protected function extractBaseData(array $inputLines): array
-    {
-        // Read base data.
-        list($time, $numberCrossings, $numberStreets, $numberCars, $bonus) = array_shift($inputLines);
-
-        // Read streets.
-        $streets = [];
-        for ($i = 0; $i < $numberStreets; $i++) {
-            list($start, $end, $name, $time) = array_shift($inputLines);
-            $streets[] = compact('start', 'end', 'name', 'time');
-        }
-
-        // Read cars.
-        $cars = [];
-        for ($i = 0; $i < $numberCars; $i++) {
-            $line = array_shift($inputLines);
-            $cars[] = [
-                'numberStreets' => array_shift($line),
-                'streets' => $line,
-            ];
-        }
-
-        // Build crossings.
-        $crossings = [];
-        for ($i = 0; $i < $numberCrossings; $i++) {
-            $crossings[$i] = [
-                'incomingStreets' => [],
-                'outgoingStreets' => [],
-            ];
-        }
-        foreach ($streets as $street) {
-            $crossings[$street['start']]['outgoingStreets'][] = $street['name'];
-            $crossings[$street['end']]['incomingStreets'][] = $street['name'];
-        }
-
-        // Combine everything.
-        $baseData = compact('time', 'numberCrossings', 'numberStreets', 'numberCars', 'bonus', 'streets', 'cars', 'crossings');
-
-        return $baseData;
     }
 
 }

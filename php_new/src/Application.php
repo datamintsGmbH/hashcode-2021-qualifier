@@ -21,6 +21,7 @@ class Application extends \Symfony\Component\Console\Application
         // Add our own commands.
         $baseCommands[] = new \Datamints\HashCode\Qualifier2021\Command\ScoreCommand();
         $baseCommands[] = new \Datamints\HashCode\Qualifier2021\Command\SolveCommand();
+        $baseCommands[] = new \Datamints\HashCode\Qualifier2021\Command\SerializeCommand();
 
         return $baseCommands;
     }
