@@ -90,6 +90,9 @@ class AverageStrategy implements StrategyInterface
             foreach ($crossing['waitlist'] as $street => $count) {
                 // Switch traffic light in relation to the number of cars coming by.
                 $time = round(($count / $crossing['length']) * $timeFactor);
+                if ($time === 0) {
+                    $time = 1;
+                }
                 $plan[] = [$street, $time];
             }
 
