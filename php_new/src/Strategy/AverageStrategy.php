@@ -5,7 +5,10 @@ declare(strict_types=1);
 namespace Datamints\HashCode\Qualifier2021\Strategy;
 
 /**
- * XXX
+ * - Count cars coming by for every traffic light
+ * - Sort out traffic lights with no cars coming by
+ * - Sort traffic lights per crossing by number of cars coming by
+ * - Distribute time according to the share of cars coming by
  */
 class AverageStrategy implements StrategyInterface
 {
@@ -81,7 +84,7 @@ class AverageStrategy implements StrategyInterface
             // Create plans from the waitlist.
             $plan = [];
             foreach ($crossing['waitlist'] as $street => $count) {
-                // Switch traffic light until all cars are through OR time is up, but at least 1 second.
+                // Switch traffic light in relation to the number of cars coming by.
                 $time = ceil(($count / $crossing['length']) * self::TIME_FACTOR);
                 $plan[] = [$street, $time];
             }
