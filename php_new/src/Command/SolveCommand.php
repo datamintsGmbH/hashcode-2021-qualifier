@@ -80,7 +80,7 @@ class SolveCommand extends \Symfony\Component\Console\Command\Command
         $solutions = $strategy->solve($problems);
 
         // Write output.
-        fwrite($outputFileHandle, count($solutions) . PHP_EOL);
+        //fwrite($outputFileHandle, count($solutions) . PHP_EOL);
         foreach ($solutions as $solution) {
             foreach ($solution as $line) {
                 fwrite($outputFileHandle, implode(' ', $line) . PHP_EOL);
